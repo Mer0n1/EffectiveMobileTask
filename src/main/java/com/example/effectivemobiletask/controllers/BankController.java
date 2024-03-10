@@ -4,10 +4,12 @@ import com.example.effectivemobiletask.models.BankAccount;
 import com.example.effectivemobiletask.models.EmailForm;
 import com.example.effectivemobiletask.models.MoneyTransferForm;
 import com.example.effectivemobiletask.models.PhoneNumberForm;
+import com.example.effectivemobiletask.models.dto.BankAccountDTO;
 import com.example.effectivemobiletask.services.BankService;
 import com.example.effectivemobiletask.utils.EmailValidator;
 import com.example.effectivemobiletask.utils.PhoneNumberValidator;
 import jakarta.validation.Valid;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/bank")
@@ -28,7 +31,8 @@ public class BankController {
     private EmailValidator emailValidator;
     @Autowired
     private PhoneNumberValidator phoneNumberValidator;
-
+    @Autowired
+    private ModelMapper modelMapper;
 
     @PatchMapping("/deletePhoneNumber")
     public ResponseEntity<?> deletePhoneNumber(Principal principal) {
@@ -105,22 +109,39 @@ public class BankController {
     }
 
     @GetMapping("/searchByDateOfBirth")
-    public List<BankAccount> searchByDate(@RequestParam("date") @DateTimeFormat(pattern = "dd.MM.yyyy") Date date) {
-        return bankService.getBankAccountsByDateOfBirth(date);
+    public List<BankAccountDTO> searchByDate(@RequestParam("date") @DateTimeFormat(pattern = "dd.MM.yyyy") Date date) {
+        return bankService.getBankAccountsByDateOfBirth(date)
+                .stream().map(this::convertToBankAccountDTO).collect(Collectors.toList());
     }
 
     @GetMapping("/searchByFullname")
-    public List<BankAccount> searchByFullName(@RequestParam("full_name") String full_name) {
-        return bankService.getBankAccountsByFullName(full_name);
+    public List<BankAccountDTO> searchByFullName(@RequestParam("full_name") String full_name) {
+        return bankService.getBankAccountsByFullName(full_name)
+                .stream().map(this::convertToBankAccountDTO).collect(Collectors.toList());
     }
 
     @GetMapping("/searchByPhoneNumber")
-    public List<BankAccount> searchByPhoneNumber(@RequestParam("phone_number") String phone_number) {
-        return new ArrayList<>(Collections.singletonList(bankService.getBankAccountByPhone(phone_number)));
+    public List<BankAccountDTO> searchByPhoneNumber(@RequestParam("phone_number") String phone_number) {
+        return new ArrayList<>(Collections.singletonList(bankService.getBankAccountByPhone(phone_number)))
+                .stream().map(this::convertToBankAccountDTO).collect(Collectors.toList());
     }
 
     @GetMapping("/searchByEmail")
-    public List<BankAccount> searchByEmail(String email) {
-        return new ArrayList<>(Collections.singletonList(bankService.getBankAccountByEmail(email)));
+    public List<BankAccountDTO> searchByEmail(String email) {
+        return new ArrayList<>(Collections.singletonList(bankService.getBankAccountByEmail(email)))
+                .stream().map(this::convertToBankAccountDTO).collect(Collectors.toList());
+    }
+
+    private BankAccount convertToBankAccount(BankAccountDTO dto) {
+        if (dto == null)
+            return null;
+
+        return modelMapper.map(dto, BankAccount.class);
+    }
+    private BankAccountDTO convertToBankAccountDTO(BankAccount account) {
+        if (account == null)
+            return null;
+
+        return modelMapper.map(account, BankAccountDTO.class);
     }
 }
